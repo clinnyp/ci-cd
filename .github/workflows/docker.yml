@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: Print message
         run: echo "Hello, world!"
-
-jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
