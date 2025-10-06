@@ -5,12 +5,12 @@ on:
     branches:
       - main
 
-  jobs:
-    print:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Print message
-          run: echo "Hello, world!"
+jobs:
+  print:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print message
+        run: echo "Hello, world!"
 
 # jobs:
 #   build-and-push:
