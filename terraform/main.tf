@@ -84,16 +84,19 @@ variable "image_tag" {
 output "acr_login_server" {
   value       = azurerm_container_registry.acr.login_server
   description = "Login server for ACR"
+  sensitive   = true
 }
 
 output "acr_username" {
   value       = azurerm_container_registry.acr.admin_username
   description = "Admin username for ACR"
+  sensitive   = true
 }
 
 output "acr_password" {
   value       = azurerm_container_registry.acr.admin_password
   description = "Admin password for ACR"
+  sensitive   = true
 }
 
 output "webapp_url" {
