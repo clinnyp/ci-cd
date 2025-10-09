@@ -87,6 +87,11 @@ output "acr_login_server" {
   sensitive   = true
 }
 
+output "acr_name" {
+  value       = azurerm_container_registry.acr.name
+  description = "Name of the Container Registry"
+}
+
 output "acr_username" {
   value       = azurerm_container_registry.acr.admin_username
   description = "Admin username for ACR"
