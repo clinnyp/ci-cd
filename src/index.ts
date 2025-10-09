@@ -8,7 +8,11 @@ app.get('/health', (c) => {
 })
 
 app.get('/', (c) => {
-  return c.json({ message: 'Hello Hono!' })
+  return c.json({ message: 'Hello Hono! deployed on azure' })
+})
+
+app.get('/test', (c) => {
+  return c.json({ message: 'Hello Hono! deployed on azure' })
 })
 
 serve({
