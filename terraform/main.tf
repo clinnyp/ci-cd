@@ -6,6 +6,13 @@ terraform {
     }
   }
   required_version = ">= 1.0"
+
+  backend "azurerm" {
+    resource_group_name  = "tfstate-storage-rg"
+    storage_account_name = "tfstatestoragecp"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+}
 }
 
 provider "azurerm" {
@@ -48,8 +55,14 @@ resource "azurerm_linux_web_app" "webapp" {
   resource_group_name = azurerm_resource_group.rg.name
   service_plan_id     = azurerm_service_plan.plan.id
 
-  site_config {
+ site_config {
+  application_stack {
+    docker_image_name        = "hono-app:latest"
+    docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
+    docker_registry_username = azurerm_container_registry.acr.admin_username
+    docker_registry_password = azurerm_container_registry.acr.admin_password
   }
+} 
 
   app_settings = {
     WEBSITES_PORT = "3000"

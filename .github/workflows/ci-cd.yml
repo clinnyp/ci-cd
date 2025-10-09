@@ -81,6 +81,7 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           client-id: ${{ secrets.ARM_CLIENT_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
 
       - name: Update Web App Container
         run: |
@@ -88,8 +89,8 @@ jobs:
             --name ${{ needs.terraform.outputs.webapp_name }} \
             --resource-group ${{ needs.terraform.outputs.rg_name }} \
             --docker-custom-image-name ${{ needs.terraform.outputs.acr_login_server }}/hono-app:${{ github.sha }} \
-            --docker-registry-server-url ${{ needs.terraform.outputs.acr_login_server }} \
-            --docker-registry-server-username ${{ needs.terraform.outputs.acr_username }} \
+            --docker-registry-server-url https://${{ needs.terraform.outputs.acr_login_server }} \
+            --docker-registry-server-user ${{ needs.terraform.outputs.acr_username }} \
             --docker-registry-server-password ${{ needs.terraform.outputs.acr_password }}
 
       - name: Restart Web App
