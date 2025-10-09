@@ -103,10 +103,13 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-          tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          client-id: ${{ secrets.ARM_CLIENT_ID }}
-          client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
+          creds: |
+            {
+              "clientId": "${{ secrets.ARM_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.ARM_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.ARM_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.ARM_TENANT_ID }}"
+            }  
 
       - name: Get ACR Credentials
         id: acr_creds
