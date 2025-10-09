@@ -46,12 +46,26 @@ jobs:
         id: tf_outputs
         run: |
           cd terraform
-          echo "acr_login_server=$(terraform output -raw acr_login_server)" >> $GITHUB_OUTPUT
-          echo "acr_username=$(terraform output -raw acr_username)" >> $GITHUB_OUTPUT
-          echo "acr_password=$(terraform output -raw acr_password)" >> $GITHUB_OUTPUT
-          echo "webapp_url=$(terraform output -raw webapp_url)" >> $GITHUB_OUTPUT
-          echo "webapp_name=$(terraform output -raw webapp_name)" >> $GITHUB_OUTPUT
-          echo "rg_name=$(terraform output -raw rg_name)" >> $GITHUB_OUTPUT 
+          
+          # Capture outputs into variables
+          ACR_LOGIN_SERVER=$(terraform output -raw acr_login_server)
+          ACR_USERNAME=$(terraform output -raw acr_username)
+          ACR_PASSWORD=$(terraform output -raw acr_password)
+          WEBAPP_URL=$(terraform output -raw webapp_url)
+          WEBAPP_NAME=$(terraform output -raw webapp_name)
+          RG_NAME=$(terraform output -raw rg_name)
+          
+          # Mask sensitive values in logs
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "::add-mask::$ACR_USERNAME"
+          
+          # Set outputs for use in other jobs
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+          echo "webapp_url=$WEBAPP_URL" >> $GITHUB_OUTPUT
+          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
+          echo "rg_name=$RG_NAME" >> $GITHUB_OUTPUT 
 
   build-and-push:
     runs-on: ubuntu-latest
