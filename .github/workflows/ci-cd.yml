@@ -6,6 +6,7 @@ on:
       - main
     paths-ignore:
       - '.github/workflows/**'
+      - '.gitignore'
   workflow_dispatch:
 
 jobs:
