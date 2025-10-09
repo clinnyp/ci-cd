@@ -56,6 +56,7 @@ resource "azurerm_linux_web_app" "webapp" {
   service_plan_id     = azurerm_service_plan.plan.id
 
  site_config {
+    always_on                = false
   application_stack {
     docker_image_name        = "hono-app:latest"
     docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
