@@ -22,6 +22,7 @@ jobs:
       webapp_url: ${{ steps.tf_outputs.outputs.webapp_url }}
       webapp_name: ${{ steps.tf_outputs.outputs.webapp_name }}
       rg_name: ${{ steps.tf_outputs.outputs.rg_name }}
+      acr_name: ${{ steps.tf_outputs.outputs.acr_name }}
 
     steps:
       - name: Checkout Code
@@ -42,10 +43,11 @@ jobs:
       - name: Terraform Outputs
         id: tf_outputs
         run: |
-          cd terraform 
-          echo "webapp_url=$WEBAPP_URL" >> $GITHUB_OUTPUT
-          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
-          echo "rg_name=$RG_NAME" >> $GITHUB_OUTPUT 
+          cd terraform
+          echo "webapp_url=$(terraform output -raw webapp_url)" >> $GITHUB_OUTPUT
+          echo "webapp_name=$(terraform output -raw webapp_name)" >> $GITHUB_OUTPUT
+          echo "rg_name=$(terraform output -raw rg_name)" >> $GITHUB_OUTPUT
+          echo "acr_name=$(terraform output -raw acr_name)" >> $GITHUB_OUTPUT 
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -69,28 +71,26 @@ jobs:
           ACR_NAME="${{ needs.terraform.outputs.acr_name }}"
           RG_NAME="${{ needs.terraform.outputs.rg_name }}"
           
-          echo "ACR_NAME=$ACR_NAME" >> $GITHUB_OUTPUT
-          echo "RG_NAME=$RG_NAME" >> $GITHUB_OUTPUT
-
+          # Get ACR credentials from Azure (secure - not from job outputs)
           ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RG_NAME --query loginServer -o tsv)
           ACR_USERNAME=$(az acr credential show --name $ACR_NAME --resource-group $RG_NAME --query username -o tsv)
           ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --resource-group $RG_NAME --query "passwords[0].value" -o tsv)
           
-          echo "ACR_LOGIN_SERVER=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "ACR_USERNAME=$ACR_USERNAME" >> $GITHUB_OUTPUT
-          echo "ACR_PASSWORD=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
         
       - name: Log in to Azure Container Registry
-        uses: azure/login@v2
+        uses: azure/docker-login@v2
         with:
-        login-server: ${{ steps.acr_creds.outputs.acr_login_server }}
-        username: ${{ steps.acr_creds.outputs.acr_username }}
-        password: ${{ steps.acr_creds.outputs.acr_password }}
+          login-server: ${{ steps.acr_creds.outputs.acr_login_server }}
+          username: ${{ steps.acr_creds.outputs.acr_username }}
+          password: ${{ steps.acr_creds.outputs.acr_password }}
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ needs.terraform.outputs.acr_login_server }}/hono-app:${{ github.sha }} .
-          docker push ${{ needs.terraform.outputs.acr_login_server }}/hono-app:${{ github.sha }}
+          docker build -t ${{ steps.acr_creds.outputs.acr_login_server }}/hono-app:${{ github.sha }} .
+          docker push ${{ steps.acr_creds.outputs.acr_login_server }}/hono-app:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -105,15 +105,30 @@ jobs:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
 
+      - name: Get ACR Credentials
+        id: acr_creds
+        run: |
+          ACR_NAME="${{ needs.terraform.outputs.acr_name }}"
+          RG_NAME="${{ needs.terraform.outputs.rg_name }}"
+          
+          # Get ACR credentials from Azure (secure - not from job outputs)
+          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RG_NAME --query loginServer -o tsv)
+          ACR_USERNAME=$(az acr credential show --name $ACR_NAME --resource-group $RG_NAME --query username -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --resource-group $RG_NAME --query "passwords[0].value" -o tsv)
+          
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
       - name: Update Web App Container
         run: |
           az webapp config container set \
             --name ${{ needs.terraform.outputs.webapp_name }} \
             --resource-group ${{ needs.terraform.outputs.rg_name }} \
-            --docker-custom-image-name ${{ needs.terraform.outputs.acr_login_server }}/hono-app:${{ github.sha }} \
-            --docker-registry-server-url https://${{ needs.terraform.outputs.acr_login_server }} \
-            --docker-registry-server-user ${{ needs.terraform.outputs.acr_username }} \
-            --docker-registry-server-password ${{ needs.terraform.outputs.acr_password }}
+            --docker-custom-image-name ${{ steps.acr_creds.outputs.acr_login_server }}/hono-app:${{ github.sha }} \
+            --docker-registry-server-url https://${{ steps.acr_creds.outputs.acr_login_server }} \
+            --docker-registry-server-user ${{ steps.acr_creds.outputs.acr_username }} \
+            --docker-registry-server-password ${{ steps.acr_creds.outputs.acr_password }}
 
       - name: Restart Web App
         run: |
